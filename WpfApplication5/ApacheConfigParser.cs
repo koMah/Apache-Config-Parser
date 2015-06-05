@@ -10,15 +10,18 @@ namespace WpfApplication5
 {
     public class ApacheConfigParser
     {
+
         	private static String commentRegex = "#.*";
-	        private static String directiveRegex = "([^\\s]+)\\s*(.+)";
-	        private static String sectionOpenRegex = "<([^/\\s>]+)\\s*([^>]+)?>";
+            private static String directiveRegex = "\\s*(#)*\\s*([^\\s]+)\\s*(.+)";
+            private static String sectionOpenRegex = "\\s*(#)*\\s*<([^/\\s>]+)\\s*([^>]+)?>";
 	        private static String sectionCloseRegex = "</([^\\s>]+)\\s*>";
 
-            private static Regex commentMatcher = new Regex(commentRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
-            private static Regex directiveMatcher = new Regex(directiveRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
-            private static Regex sectionOpenMatcher = new Regex(sectionOpenRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
-            private static Regex sectionCloseMatcher = new Regex(sectionCloseRegex, RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+            private static RegexOptions RXPOptions = RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled;
+
+            private static Regex commentMatcher = new Regex(commentRegex, RXPOptions);
+            private static Regex directiveMatcher = new Regex(directiveRegex, RXPOptions);
+            private static Regex sectionOpenMatcher = new Regex(sectionOpenRegex, RXPOptions);
+            private static Regex sectionCloseMatcher = new Regex(sectionCloseRegex, RXPOptions);
 
             public ApacheConfigParser()
             {
@@ -33,23 +36,27 @@ namespace WpfApplication5
 
                 string[] lines = File.ReadAllLines(path);
 
-		        ConfigNode currentNode = ConfigNode.createRootNode();
+		        ConfigNode currentNode = ConfigNode.CreateRootNode();
 
                 foreach(string line in lines)
                 {
-                    if (commentMatcher.IsMatch(line))
+                    /*if (commentMatcher.IsMatch(line))
                     {
                         continue;
                     }
-                    else if (sectionOpenMatcher.IsMatch(line))
+                    else*/
+
+                    if (sectionOpenMatcher.IsMatch(line))
                     {
                         Match Result = sectionOpenMatcher.Match(line);
 
                         if (Result.Success)
                         {
-                            String name = Result.Groups[1].Value;
-                            String content = Result.Groups[2].Value;
-                            ConfigNode sectionNode = ConfigNode.createChildNode(name, content, currentNode);
+                            
+                            bool commented = Result.Groups[1].Value != String.Empty;
+                            String name = Result.Groups[2].Value;
+                            String content = Result.Groups[3].Value;
+                            ConfigNode sectionNode = ConfigNode.CreateChildNode(name, content, currentNode, commented);
                             currentNode = sectionNode;
                         }
                     }
@@ -63,9 +70,11 @@ namespace WpfApplication5
 
                         if (Result.Success)
                         {
-                            String name = Result.Groups[1].Value;
-                            String content = Result.Groups[2].Value;
-                            ConfigNode.createChildNode(name, content, currentNode);
+                            Console.WriteLine(Result.Groups[1].Value);
+                            bool commented = Result.Groups[1].Value != String.Empty;
+                            String name = Result.Groups[2].Value;
+                            String content = Result.Groups[3].Value;
+                            ConfigNode.CreateChildNode(name, content, currentNode, commented);
                         }
                     } // TODO: Should an exception be thrown for unknown lines?
                 }

@@ -35,14 +35,18 @@ namespace WpfApplication5
             ApacheConfigParser parser = new ApacheConfigParser();
             ConfigNode config = parser.Parse(@"D:\wamp\bin\apache\apache2.4.9\conf\extra\httpd-vhosts.conf");
 
-            foreach (ConfigNode child in config.getChildren()) {
-                if (child.getName().Equals("VirtualHost")) {
-                    Console.WriteLine(child.getContent());
-                    foreach (ConfigNode child2 in child.getChildren())
+            foreach (ConfigNode child in config.GetChildren())
+            {
+                if (child.GetName().Equals("VirtualHost")) {
+                    Dump.AppendText(child.ToString() + Environment.NewLine + Environment.NewLine);
+                   /* Console.WriteLine(child.GetContent() + Environment.NewLine);
+                    foreach (ConfigNode child2 in child.GetChildren())
                     {
-                        Console.WriteLine(child2.getName());
-                        Console.WriteLine(child2.getContent());
+                        Dump.AppendText(child2.GetName() + child2.GetContent() + Environment.NewLine);
+                        Console.WriteLine(child2.GetName() + Environment.NewLine);
+                        Console.WriteLine(child2.GetContent() + Environment.NewLine);
                     }
+                    Dump.AppendText(Environment.NewLine);*/
                 }
             }
         }

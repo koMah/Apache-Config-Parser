@@ -7,124 +7,193 @@ using System.Threading.Tasks;
 namespace WpfApplication5
 {
 
-public class ConfigNode
-{
+    public class ConfigNode
+    {
+        public enum SearchBy
+        {
+            DirectiveName,
+            DirectiveValue
+        };
 
-	private String name;
-	private String content;
-	private List<ConfigNode> children = new List<ConfigNode>();
+        private String Name;
+        private String Value;
 
-	private ConfigNode parent;
+        private bool Commented;
 
-	/**
-	 * Private constructor. {@code ConfigNode} instances should be created via the creation factory methods.
-	 * 
-	 * @param name
-	 *            the node name
-	 * @param content
-	 *            the node content
-	 * @param parent
-	 *            the parent of the node
-	 */
-	private ConfigNode(String name, String content, ConfigNode parent) {
-		this.name = name;
-		this.content = content;
-		this.parent = parent;
-	}
+        private ConfigNode Parent;
+        private List<ConfigNode> Childs = new List<ConfigNode>();
 
-	/**
-	 * Creates a root node.
-	 * 
-	 * <p>
-	 * A root node will have a null parent, name, and content. It is the top level of the configuration tree with child
-	 * nodes containing actual values.
-	 * 
-	 * @return a new root configuration node
-	 */
-	public static ConfigNode createRootNode() {
-		return new ConfigNode(null, null, null);
-	}
+        
 
-	/**
-	 * Creates a child node
-	 * 
-	 * <p>
-	 * A child node contains a configuration name and configuration content as well as a parent node in the tree. If the
-	 * child node is an apache configuration section it may also have child nodes of its own.
-	 * 
-	 * @param name
-	 *            the configuration name (cannot be null)
-	 * @param content
-	 *            the configuration content (cannot be null)
-	 * @param parent
-	 *            the child nodes parent (cannot be null)
-	 * @return a new child configuration node
-	 * @throws NullPointerException
-	 *             if name, content, or parent is null
-	 */
-	public static ConfigNode createChildNode(String name, String content, ConfigNode parent) {
-		if (name == null) {
-			throw new ArgumentNullException("name: null");
-		}
-		if (content == null) {
-			throw new ArgumentNullException("content: null");
-		}
-		if (parent == null) {
-			throw new ArgumentNullException("parent: null");
-		}
+        /**
+         * Private constructor. {@code ConfigNode} instances should be created via the creation factory methods.
+         * 
+         * @param name
+         *            the node name
+         * @param Value
+         *            the node Value
+         * @param parent
+         *            the parent of the node
+         */
+        private ConfigNode(String Name, String Value, ConfigNode Parent, bool Commented)
+        {
+            this.Commented = Commented;
+            this.Name = Name;
+            this.Value = Value;
+            this.Parent = Parent;
+        }
 
-		ConfigNode child = new ConfigNode(name, content, parent);
-		parent.AddChild(child);
+        /**
+         * Creates a root node.
+         * 
+         * <p>
+         * A root node will have a null parent, name, and Value. It is the top level of the configuration tree with child
+         * nodes containing actual values.
+         * 
+         * @return a new root configuration node
+         */
+        public static ConfigNode CreateRootNode()
+        {
+            return new ConfigNode(null, null, null, true);
+        }
 
-		return child;
-	}
+        /**
+         * Creates a child node
+         * 
+         * <p>
+         * A child node contains a configuration name and configuration Value as well as a parent node in the tree. If the
+         * child node is an apache configuration section it may also have child nodes of its own.
+         * 
+         * @param name
+         *            the configuration name (cannot be null)
+         * @param Value
+         *            the configuration Value (cannot be null)
+         * @param parent
+         *            the child nodes parent (cannot be null)
+         * @return a new child configuration node
+         * @throws NullPointerException
+         *             if name, Value, or parent is null
+         */
+        public static ConfigNode CreateChildNode(String name, String Value, ConfigNode parent, bool commented)
+        {
+            if (name == null)
+            {
+                throw new ArgumentNullException("name: null");
+            }
+            if (Value == null)
+            {
+                throw new ArgumentNullException("content: null");
+            }
+            if (parent == null)
+            {
+                throw new ArgumentNullException("parent: null");
+            }
 
-	/**
-	 * 
-	 * @return the configuration name; null if this is a root node
-	 */
-	public String getName() {
-		return name;
-	}
+            ConfigNode child = new ConfigNode(name, Value, parent, commented);
+            parent.AddChild(child);
 
-	/**
-	 * 
-	 * @return the configuration content; null if this is a root node
-	 */
-	public String getContent() {
-		return content;
-	}
+            return child;
+        }
 
-	/**
-	 * 
-	 * @return The nodes parent; null if this is a root node
-	 */
-	public ConfigNode getParent() {
-		return parent;
-	}
+        /**
+         * 
+         * @return the configuration name; null if this is a root node
+         */
+        public String GetName()
+        {
+            return Name;
+        }
 
-	/**
-	 * 
-	 * @return a list of child configuration nodes
-	 */
-	public List<ConfigNode> getChildren() {
-		return children;
-	}
+        /**
+         * 
+         * @return the configuration Value; null if this is a root node
+         */
+        public String GetContent()
+        {
+            return Value;
+        }
 
-	/**
-	 * 
-	 * @return true if this is a root node; false otherwise
-	 */
-	public virtual bool isRootNode() {
-		return parent == null;
-	}
+        /**
+         * 
+         * @return The nodes parent; null if this is a root node
+         */
+        public ConfigNode getParent()
+        {
+            return Parent;
+        }
 
-	public override String ToString() {
-		return "ConfigNode {name=" + name + ", content=" + content + ", childNodeCount=" + children.Count().ToString() + "}";
-	}
+        /**
+         * 
+         * @return a list of child configuration nodes
+         */
+        public List<ConfigNode> GetChildren()
+        {
+            return Childs;
+        }
 
-	private void AddChild(ConfigNode child) {
-		children.Add(child);
-	}
-}
+        /**
+         * 
+         * @return a list of child configuration nodes
+         */
+        public List<ConfigNode> GetChildren(string SearchFor, SearchBy SearchBy)
+        {
+            switch (SearchBy)
+            {
+                case SearchBy.DirectiveName:
+                    return Childs.FindAll(item => item.GetName() == SearchFor);
+            }
+
+            return null;
+        }
+
+        public bool HasChildren()
+        {
+            return Childs.Count > 0;
+        }
+
+        /**
+         * 
+         * @return true if this is a root node; false otherwise
+         */
+        public virtual bool isRootNode()
+        {
+            return Parent == null;
+        }
+
+        public override String ToString()
+        {
+            return BuildOutput();
+        }
+
+        public string BuildOutput(int TabsLevel = 0)
+        {
+            StringBuilder Out = new StringBuilder();
+
+            string Tabs = TabsLevel == 0 ? String.Empty : "\t".PadLeft(TabsLevel);
+            string Hash = Commented ? "#" : String.Empty;
+
+            if (HasChildren())
+            {
+                Out.AppendLine(String.Format("{0}{1}<{2} {3}>", Hash, Tabs, Name, Value));
+
+                foreach (ConfigNode child in GetChildren())
+                {
+                    Out.AppendLine(String.Format("{0}{1}{2}", Hash, Tabs, child.BuildOutput(TabsLevel + 1)));
+                }
+
+                Out.AppendFormat("{0}</{1}>", Tabs, Name);
+            }
+            else
+            {
+                Out.Append(String.Format("{0}{1}{2} {3}", Hash, Tabs, GetName(), GetContent()));
+            }
+
+            return Out.ToString();
+        }
+
+        private void AddChild(ConfigNode child)
+        {
+            Childs.Add(child);
+        }
+    }
 }
