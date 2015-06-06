@@ -19,6 +19,7 @@ namespace WpfApplication5
         private String Value;
 
         private bool Commented;
+        private bool IsComment = false;
 
         private ConfigNode Parent;
         private List<ConfigNode> Childs = new List<ConfigNode>();
@@ -28,8 +29,8 @@ namespace WpfApplication5
         /**
          * Private constructor. {@code ConfigNode} instances should be created via the creation factory methods.
          * 
-         * @param name
-         *            the node name
+         * @param DirectiveName
+         *            the node DirectiveName
          * @param Value
          *            the node Value
          * @param parent
@@ -47,7 +48,7 @@ namespace WpfApplication5
          * Creates a root node.
          * 
          * <p>
-         * A root node will have a null parent, name, and Value. It is the top level of the configuration tree with child
+         * A root node will have a null parent, DirectiveName, and Value. It is the top level of the configuration tree with child
          * nodes containing actual values.
          * 
          * @return a new root configuration node
@@ -61,18 +62,18 @@ namespace WpfApplication5
          * Creates a child node
          * 
          * <p>
-         * A child node contains a configuration name and configuration Value as well as a parent node in the tree. If the
+         * A child node contains a configuration DirectiveName and configuration Value as well as a parent node in the tree. If the
          * child node is an apache configuration section it may also have child nodes of its own.
          * 
-         * @param name
-         *            the configuration name (cannot be null)
+         * @param DirectiveName
+         *            the configuration DirectiveName (cannot be null)
          * @param Value
          *            the configuration Value (cannot be null)
          * @param parent
          *            the child nodes parent (cannot be null)
          * @return a new child configuration node
          * @throws NullPointerException
-         *             if name, Value, or parent is null
+         *             if DirectiveName, Value, or parent is null
          */
         public static ConfigNode CreateChildNode(String name, String Value, ConfigNode parent, bool commented)
         {
@@ -97,7 +98,7 @@ namespace WpfApplication5
 
         /**
          * 
-         * @return the configuration name; null if this is a root node
+         * @return the configuration DirectiveName; null if this is a root node
          */
         public String GetName()
         {
@@ -165,27 +166,35 @@ namespace WpfApplication5
             return BuildOutput();
         }
 
-        public string BuildOutput(int TabsLevel = 0)
+        public string BuildOutput(int TabsLevel = 0, string Indent = "\t")
         {
             StringBuilder Out = new StringBuilder();
 
-            string Tabs = TabsLevel == 0 ? String.Empty : "\t".PadLeft(TabsLevel);
+            string Tabs = TabsLevel == 0 ? String.Empty : Indent.PadLeft(TabsLevel);
             string Hash = Commented ? "#" : String.Empty;
+
+            //Out.Append(Hash);
 
             if (HasChildren())
             {
+                // Section Directive Open
                 Out.AppendLine(String.Format("{0}{1}<{2} {3}>", Hash, Tabs, Name, Value));
-
+                
                 foreach (ConfigNode child in GetChildren())
                 {
-                    Out.AppendLine(String.Format("{0}{1}{2}", Hash, Tabs, child.BuildOutput(TabsLevel + 1)));
+                    // Section Directive Children
+                    string ChildHash = child.Commented && !child.HasChildren() ? "#" : String.Empty;
+                    Out.AppendFormat("{0}{1}{2}", ChildHash, Tabs, child.BuildOutput(TabsLevel + 1, Indent));
+                    Out.AppendLine();
                 }
 
-                Out.AppendFormat("{0}</{1}>", Tabs, Name);
+                // Section Directive Close
+                Out.AppendFormat("{0}{1}</{2}>", Hash, Tabs, Name);
             }
             else
             {
-                Out.Append(String.Format("{0}{1}{2} {3}", Hash, Tabs, GetName(), GetContent()));
+                // Single Directive
+                Out.Append(String.Format("{0}{1} {2}",  Tabs, GetName(), GetContent()));
             }
 
             return Out.ToString();

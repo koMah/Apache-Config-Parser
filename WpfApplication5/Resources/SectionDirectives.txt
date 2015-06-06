@@ -1,0 +1,15 @@
+AuthnProviderAlias
+Directory
+DirectoryMatch
+Files
+FilesMatch
+IfDefine
+IfModule
+IfVersion
+Limit
+LimitExcept
+Location
+LocationMatch
+Proxy
+ProxyMatch
+VirtualHost

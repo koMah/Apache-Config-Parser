@@ -2,84 +2,124 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace WpfApplication5
 {
+    [Flags]
+    public enum ApacheParserOptions
+    {
+        None = 0,
+        ParseIncludedFiles = 1,
+        ParseWithComments = 2
+    }
+
     public class ApacheConfigParser
     {
+        private static String CommentPattern = "#.*";
+        private static String DirectivePattern = "([^\\s]+)\\s*(.+)";
+       // private static String SectionOpenPattern = "^(?:\\s*#?\\s*)?<([^/\\s>]+)\\s*([^>]+)?>\\s*$";
+        private static String SectionOpenPattern = "^(?:[ \\t]*#?[ \\t]*)<([^/\\s>]+)\\s*([^>]+)?>\\s*$";
+        private static String SectionClosePattern = "</([^\\s>]+)\\s*>";
 
-        	private static String commentRegex = "#.*";
-            private static String directiveRegex = "\\s*(#)*\\s*([^\\s]+)\\s*(.+)";
-            private static String sectionOpenRegex = "\\s*(#)*\\s*<([^/\\s>]+)\\s*([^>]+)?>";
-	        private static String sectionCloseRegex = "</([^\\s>]+)\\s*>";
+        private static Regex CommentRegex = new Regex(CommentPattern, RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+        private static Regex DirectiveRegex = new Regex(DirectivePattern, RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+        private static Regex SectionOpenRegex = new Regex(SectionOpenPattern, RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+        private static Regex SectionCloseRegex = new Regex(SectionClosePattern, RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
 
-            private static RegexOptions RXPOptions = RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled;
+        public ConfigNode RootNode;
 
-            private static Regex commentMatcher = new Regex(commentRegex, RXPOptions);
-            private static Regex directiveMatcher = new Regex(directiveRegex, RXPOptions);
-            private static Regex sectionOpenMatcher = new Regex(sectionOpenRegex, RXPOptions);
-            private static Regex sectionCloseMatcher = new Regex(sectionCloseRegex, RXPOptions);
+        public ApacheConfigParser()
+        {
+        }
 
-            public ApacheConfigParser()
+        public ApacheConfigParser(string ConfPath, ApacheParserOptions Options = ApacheParserOptions.None)
+        {
+            Parse(ConfPath, Options);
+        }
+
+        public ConfigNode Parse(string ConfPath, ApacheParserOptions Options = ApacheParserOptions.None)
+        {
+            
+            string ApacheRootConfDir = Directory.GetParent(Path.GetDirectoryName(ConfPath)).FullName;
+
+            if (ConfPath == null)
             {
+			    throw new ArgumentNullException("path: null");
+		    }
+
+            if(!File.Exists(ConfPath))
+            {
+                throw new FileNotFoundException( String.Format( "{0} file not found" ) );
             }
 
-            public ConfigNode Parse(string path){
+            bool ParseComments = Options.HasFlag(ApacheParserOptions.ParseWithComments);
+            bool ParseIncludes = Options.HasFlag(ApacheParserOptions.ParseIncludedFiles);
 
-                if (path == null)
+            string[] ConfLines = File.ReadAllLines(ConfPath);
+            string[] DirectivesList =  Properties.Resources.SingleDirectives.Split('\n');
+            string[] SectionDirectivesList = Properties.Resources.SectionDirectives.Split('\n');
+
+		    ConfigNode CurrentNode = ConfigNode.CreateRootNode();
+
+            foreach(string ConfLine in ConfLines)
+            {
+                bool IsComment = ConfLine.Trim().StartsWith("#");
+
+                if (SectionOpenRegex.IsMatch(ConfLine))
                 {
-			        throw new ArgumentNullException("path: null");
-		        }
+                    Match Result = SectionOpenRegex.Match(ConfLine);
 
-                string[] lines = File.ReadAllLines(path);
-
-		        ConfigNode currentNode = ConfigNode.CreateRootNode();
-
-                foreach(string line in lines)
-                {
-                    /*if (commentMatcher.IsMatch(line))
+                    if (Result.Success)
                     {
-                        continue;
+                        String DirectiveName = Result.Groups[1].Value.Replace("#", String.Empty);
+                        if(SectionDirectivesList.Contains(DirectiveName))
+                        {
+                            Console.WriteLine(DirectiveName);
+                            String DirectiveContent = Result.Groups[2].Value;
+                            ConfigNode SectionNode = ConfigNode.CreateChildNode(DirectiveName, DirectiveContent, CurrentNode, IsComment);
+                            CurrentNode = SectionNode;
+                        }
                     }
-                    else*/
-
-                    if (sectionOpenMatcher.IsMatch(line))
+                }
+                else if (SectionCloseRegex.IsMatch(ConfLine))
+                {
+                    Match Result = SectionCloseRegex.Match(ConfLine);
+                    if (Result.Success)
                     {
-                        Match Result = sectionOpenMatcher.Match(line);
+                        String DirectiveName = Result.Groups[1].Value.Replace("#", String.Empty);
+                        if (SectionDirectivesList.Contains(DirectiveName) && CurrentNode != null)
+                        {
+                            CurrentNode = CurrentNode.getParent();
+                        }
+                    }
+                }
+                else if (DirectiveRegex.IsMatch(ConfLine))
+                {
+                    Match Result = DirectiveRegex.Match(ConfLine);
 
-                        if (Result.Success)
+                    if (Result.Success)
+                    {
+                        String DirectiveName = Result.Groups[1].Value.Replace("#", String.Empty);
+                        if (DirectivesList.Contains(DirectiveName))
                         {
                             
-                            bool commented = Result.Groups[1].Value != String.Empty;
-                            String name = Result.Groups[2].Value;
-                            String content = Result.Groups[3].Value;
-                            ConfigNode sectionNode = ConfigNode.CreateChildNode(name, content, currentNode, commented);
-                            currentNode = sectionNode;
-                        }
-                    }
-                    else if (sectionCloseMatcher.IsMatch(line))
-                    {
-                        currentNode = currentNode.getParent();
-                    }
-                    else if (directiveMatcher.IsMatch(line))
-                    {
-                        Match Result = directiveMatcher.Match(line);
+                            String DirectiveContent = Result.Groups[2].Value;
+                            ConfigNode.CreateChildNode(DirectiveName, DirectiveContent, CurrentNode, IsComment);
+                        } 
 
-                        if (Result.Success)
-                        {
-                            Console.WriteLine(Result.Groups[1].Value);
-                            bool commented = Result.Groups[1].Value != String.Empty;
-                            String name = Result.Groups[2].Value;
-                            String content = Result.Groups[3].Value;
-                            ConfigNode.CreateChildNode(name, content, currentNode, commented);
-                        }
-                    } // TODO: Should an exception be thrown for unknown lines?
+                            // TODO: Manage comments
+                            // Console.WriteLine(Result.Groups[0].Value);
+
+                    }
                 }
+            }
 
-		        return currentNode;
-	        }
+		    return CurrentNode;
+	    }
     }
 }

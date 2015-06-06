@@ -32,23 +32,34 @@ namespace WpfApplication5
             {
                 Console.WriteLine(EXT.ToString());
             }*/
-            ApacheConfigParser parser = new ApacheConfigParser();
-            ConfigNode config = parser.Parse(@"D:\wamp\bin\apache\apache2.4.9\conf\extra\httpd-vhosts.conf");
-
-            foreach (ConfigNode child in config.GetChildren())
+            try
             {
-                if (child.GetName().Equals("VirtualHost")) {
+                ApacheConfigParser parser = new ApacheConfigParser();
+                ConfigNode config = parser.Parse(@"D:\wamp\bin\apache\apache2.4.9\conf\extra\httpd-vhosts.conf");
+
+                foreach (ConfigNode child in config.GetChildren())
+                {
                     Dump.AppendText(child.ToString() + Environment.NewLine + Environment.NewLine);
-                   /* Console.WriteLine(child.GetContent() + Environment.NewLine);
-                    foreach (ConfigNode child2 in child.GetChildren())
-                    {
-                        Dump.AppendText(child2.GetName() + child2.GetContent() + Environment.NewLine);
-                        Console.WriteLine(child2.GetName() + Environment.NewLine);
-                        Console.WriteLine(child2.GetContent() + Environment.NewLine);
-                    }
-                    Dump.AppendText(Environment.NewLine);*/
+
+
+
+                    /* if (child.GetName().Equals("VirtualHost")) {
+                         Dump.AppendText(child.ToString() + Environment.NewLine + Environment.NewLine);*/
+                    /* Console.WriteLine(child.GetContent() + Environment.NewLine);
+                     foreach (ConfigNode child2 in child.GetChildren())
+                     {
+                         Dump.AppendText(child2.GetName() + child2.GetContent() + Environment.NewLine);
+                         Console.WriteLine(child2.GetName() + Environment.NewLine);
+                         Console.WriteLine(child2.GetContent() + Environment.NewLine);
+                     }
+                     Dump.AppendText(Environment.NewLine);*/
+                    /* }*/
                 }
+            } catch (Exception Exp)
+            {
+                Console.WriteLine(Exp.ToString());
             }
+
         }
     }
 }
